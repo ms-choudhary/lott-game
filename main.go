@@ -41,7 +41,9 @@ var BetID = map[string]int{
 }
 
 var (
-	waitCycles = flag.Int("waitcycles", 2, "Cycles to wait before betting")
+	waitCycles  = flag.Int("waitcycles", 2, "Cycles to wait before betting")
+	doubleAfter = flag.Int("doubleafter", 1, "Cycles to double amount after")
+	startBet    = flag.Int("startbet", 0, "Initial bet")
 )
 
 func getCurrentGold(token string) int {
@@ -138,13 +140,20 @@ func placeBet(no int, betname string, amount int, token string) {
 }
 
 func setInitialBet(m int) {
-	if members[m].CurrentBalance < 430 {
+	if *startBet > 0 {
+		members[m].InitialBet = *startBet
+		return
+	}
+
+	if members[m].CurrentBalance < 590 {
 		members[m].InitialBet = 1
-	} else if members[m].CurrentBalance >= 430 && members[m].CurrentBalance < 1130 {
+	} else if members[m].CurrentBalance >= 590 && members[m].CurrentBalance < 980 {
 		members[m].InitialBet = 3
-	} else if members[m].CurrentBalance >= 1130 && members[m].CurrentBalance < 1820 {
+	} else if members[m].CurrentBalance >= 980 && members[m].CurrentBalance < 1372 {
 		members[m].InitialBet = 5
-	} else if members[m].CurrentBalance >= 1820 {
+	} else if members[m].CurrentBalance >= 1372 && members[m].CurrentBalance < 1959 {
+		members[m].InitialBet = 7
+	} else if members[m].CurrentBalance >= 1959 {
 		members[m].InitialBet = 10
 	}
 }
@@ -215,8 +224,13 @@ func main() {
 					members[i].BetAmount = members[i].InitialBet
 				}
 
-				fmt.Printf("\t %s: placing bet %d, current balance: %d, initial bet: %d\n", members[i].Name, members[i].BetAmount, members[i].CurrentBalance-members[i].BetAmount, members[i].InitialBet)
-				placeBet(currentGameNo, betName, members[i].BetAmount, members[i].Token)
+				betAmount := members[i].BetAmount
+				if members[i].BetAmount > 100 {
+					betAmount = members[i].BetAmount + int(float64(members[i].BetAmount)*0.02)
+				}
+
+				fmt.Printf("\t %s: placing bet %d, current balance: %d, initial bet: %d\n", members[i].Name, betAmount, members[i].CurrentBalance-members[i].BetAmount, members[i].InitialBet)
+				placeBet(currentGameNo, betName, betAmount, members[i].Token)
 			}
 		} else {
 			for i, _ := range members {
@@ -251,7 +265,7 @@ func main() {
 
 			if big == *waitCycles {
 				setBetAmountToInitial()
-			} else if big > *waitCycles+2 {
+			} else if big > *waitCycles+*doubleAfter {
 				multiplyBetAmount(2)
 			} else {
 				multiplyBetAmount(3)
@@ -262,7 +276,7 @@ func main() {
 
 			if small == *waitCycles {
 				setBetAmountToInitial()
-			} else if small > *waitCycles+2 {
+			} else if small > *waitCycles+*doubleAfter {
 				multiplyBetAmount(2)
 			} else {
 				multiplyBetAmount(3)
